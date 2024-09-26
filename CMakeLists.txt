@@ -57,7 +57,7 @@ option(SIMD_ENABLED "Whether to enable SIMD optimizations" ON)
 option(OPENMP_ENABLED "Whether to enable OpenMP parallelization" ON)
 option(IPO_ENABLED "Whether to enable interprocedural optimization" ON)
 option(CUDA_ENABLED "Whether to enable CUDA, if available" OFF)
-option(GUI_ENABLED "Whether to enable the graphical UI" ON)
+option(GUI_ENABLED "Whether to enable the graphical UI" OFF)
 option(OPENGL_ENABLED "Whether to enable OpenGL, if available" ON)
 option(TESTS_ENABLED "Whether to build test binaries" OFF)
 option(ASAN_ENABLED "Whether to enable AddressSanitizer flags" OFF)
@@ -490,25 +490,25 @@ set_target_properties(
 
 # Install header files.
 install(DIRECTORY src/     
-        DESTINATION include/colmap
+        DESTINATION include/colmap_pcd
         FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY lib/
-        DESTINATION include/colmap/lib
+        DESTINATION include/colmap_pcd/lib
         FILES_MATCHING REGEX ".*[.]h|.*[.]hpp|.*[.]inl")
 
 # Generate and install CMake configuration.
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeConfig.cmake.in"
                "${CMAKE_CURRENT_BINARY_DIR}/COLMAPConfig.cmake" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/COLMAPConfig.cmake"
-        DESTINATION "share/colmap")
+        DESTINATION "share/colmap_pcd")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeConfigVersion.cmake.in"
                "${CMAKE_CURRENT_BINARY_DIR}/COLMAPConfigVersion.cmake" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/COLMAPConfigVersion.cmake"
-        DESTINATION "share/colmap")
+        DESTINATION "share/colmap_pcd")
 
 # Install find_package scripts for dependencies.
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake
-        DESTINATION share/colmap
+        DESTINATION share/colmap_pcd
         FILES_MATCHING PATTERN "Find*.cmake")
 
 # Install batch scripts under Windows.
