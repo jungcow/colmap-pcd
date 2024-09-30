@@ -167,6 +167,8 @@ class PcdProj{
     void SearchImageMap(QuadPyramid& quad, ImageMapType& image_map);
     // Distort model of the opencv model
     Eigen::Vector2d DistortOpenCV(Eigen::Vector2d& ori_uv, const Camera& camera);
+  Eigen::Vector2d DistortOpenCVFisheye(Eigen::Vector2d& ori_uv,
+                                       const Camera& camera);
 
     MapType global_map_ptr_; // ptr to the whole point cloud map
     PcdProjectionOptions options_;
