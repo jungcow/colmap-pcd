@@ -18,7 +18,7 @@ void PcdProj::SetNewImage(const Image& image, const Camera& camera, std::map<poi
     
     // Only for opencv camera model
     std::vector<double> params = camera.Params();
-    const int cam_model_id = camera.ModelId();
+    // const int cam_model_id = camera.ModelId();
 
     double scale = options_.depth_image_scale;
     int img_h = static_cast<int>(camera.Height() * scale);
@@ -95,9 +95,43 @@ void PcdProj::SetNewImage(const Image& image, const Camera& camera, std::map<poi
             continue;
         } 
         Eigen::Matrix<int,2,1> uv;
-        uv = (point2D.XY() * scale).cast<int>();
-        if (uv(0)<0 || uv(0)>=img_w || uv(1)<0 || uv(1)>=img_h ) continue;
+        // if (cam_model_id == 5) {
+        //     /**
+        //      * In the case of fisheye, it’s difficult to verify by simply scaling the screen coordinates.
+        //      * 1. Undistort the points using `colmap::OpenCVFisheyeCameraModel::ImageToWorld`.
+        //      * 2. Scale the undistorted points with a scaling factor.
+        //      * 3. Re-distort the scaled points.
+        //      * 4. Verify using these points.
+        //      */
+        //     double u = point2D.XY()(0);
+        //     double v = point2D.XY()(1);
 
+        //     Eigen::Vector2d xy_normalized;
+        //     colmap::OpenCVFisheyeCameraModel::ImageToWorld(
+        //         camera.Params().data(),
+        //         u, v,
+        //         &xy_normalized(0), &xy_normalized(1)
+        //     );
+        //     std::vector<double> scaled_params = camera.Params();
+        //     scaled_params[0] *= scale; // fx
+        //     scaled_params[1] *= scale; // fy
+        //     scaled_params[2] *= scale; // cx
+        //     scaled_params[3] *= scale; // cy
+        //     xy_normalized *= scale;
+
+        //     double u_scaled, v_scaled;
+        //     colmap::OpenCVFisheyeCameraModel::WorldToImage(
+        //         scaled_params.data(),
+        //         xy_normalized(0), xy_normalized(1),
+        //         &u_scaled, &v_scaled
+        //     );
+        //     uv << static_cast<int>(u_scaled), static_cast<int>(v_scaled);
+
+        //     if (uv(0) < 0 || uv(0) >= img_w || uv(1) < 0 || uv(1) >= img_h) continue;
+        // } else {
+            uv = (point2D.XY() * scale).cast<int>();
+            if (uv(0)<0 || uv(0)>=img_w || uv(1)<0 || uv(1)>=img_h ) continue;
+        // }
         auto iter = img.feature_pts_map.find(uv);
         if (iter != img.feature_pts_map.end()){
             point3D_t id = point2D.GetPoint3DId();
@@ -112,6 +146,7 @@ void PcdProj::SetNewImage(const Image& image, const Camera& camera, std::map<poi
             img.succeed_match +=1;
         }
     }
+    std::cout << "succeed_match num: " << img.succeed_match << std::endl;
 
     if (options_.if_save_depth_image){
         SaveDepthImage(img);
@@ -169,16 +204,59 @@ void PcdProj::SetNewImage(const Image& image,
     double cx = params[2];
     double cy = params[3];
 
+    std::cout << "Number of initial 2d feature points: "<< pt_xys.size();
+    std::cout << std::endl;
+
     for (auto& pt_xy : pt_xys){
         Eigen::Matrix<int,2,1> uv;
+        // if (cam_model_id == 5) {
+        //     /**
+        //      * In the case of fisheye, it’s difficult to verify by simply scaling the screen coordinates.
+        //      * 1. Undistort the points using `colmap::OpenCVFisheyeCameraModel::ImageToWorld`.
+        //      * 2. Scale the undistorted points with a scaling factor.
+        //      * 3. Re-distort the scaled points.
+        //      * 4. Verify using these points.
+        //      */
+        //     double u = pt_xy.first(0);
+        //     double v = pt_xy.first(1);
 
-        uv = (pt_xy.first * scale).cast<int>();
-        if (uv(0)<0 || uv(0)>=img_w || uv(1)<0 || uv(1)>=img_h ) {
-            pt_xy.second = false;
-            Eigen::Vector3d pt_xyz = Eigen::Vector3d::Zero();
-            pt_xyzs.push_back(pt_xyz);
-            continue;
-        }
+        //     Eigen::Vector2d xy_normalized;
+        //     colmap::OpenCVFisheyeCameraModel::ImageToWorld(
+        //         camera.Params().data(),
+        //         u, v,
+        //         &xy_normalized(0), &xy_normalized(1)
+        //     );
+        //     std::vector<double> scaled_params = camera.Params();
+        //     scaled_params[0] *= scale; // fx
+        //     scaled_params[1] *= scale; // fy
+        //     scaled_params[2] *= scale; // cx
+        //     scaled_params[3] *= scale; // cy
+        //     xy_normalized *= scale;
+
+        //     double u_scaled, v_scaled;
+        //     colmap::OpenCVFisheyeCameraModel::WorldToImage(
+        //         scaled_params.data(),
+        //         xy_normalized(0), xy_normalized(1),
+        //         &u_scaled, &v_scaled
+        //     );
+        //     std::cout << "before: (" << u << ", " << v << ")" << std::endl;
+        //     uv << static_cast<int>(u_scaled), static_cast<int>(v_scaled);
+        //     std::cout << "after: (" << uv(0) << ", " << uv(1) << ")" << std::endl;
+        //     if (uv(0) < 0 || uv(0) >= img_w || uv(1) < 0 || uv(1) >= img_h) {
+        //         pt_xy.second = false;
+        //         Eigen::Vector3d pt_xyz = Eigen::Vector3d::Zero();
+        //         pt_xyzs.push_back(pt_xyz);
+        //         continue;
+        //     }
+        // } else {
+            uv = (pt_xy.first * scale).cast<int>();
+            if (uv(0)<0 || uv(0)>=img_w || uv(1)<0 || uv(1)>=img_h ) {
+                pt_xy.second = false;
+                Eigen::Vector3d pt_xyz = Eigen::Vector3d::Zero();
+                pt_xyzs.push_back(pt_xyz);
+                continue;
+            }
+        // }
         auto iter = img.feature_pts_map.find(uv);
         if (iter != img.feature_pts_map.end()){
             pt_xy.second = true;
@@ -238,7 +316,11 @@ void PcdProj::SetNewImage(const Image& image,
             Eigen::Vector3d pt_xyz = Eigen::Vector3d::Zero();
             pt_xyzs.push_back(pt_xyz);
         }
-    }    
+    }
+    if (options_.if_save_depth_image){
+        SaveDepthImage(img);
+        std::cout<<"Saved depth image "<<img.img_name<<std::endl;
+    }
 }
 void PcdProj::BuildSubMap(const MapType& ptr){
     global_map_ptr_ = ptr;
@@ -276,7 +358,8 @@ void PcdProj::SearchSubMap(const LImage& img, ImageMapType& image_map){
     // float y_bar_min = -img.cy / img.fy;
     // float y_bar_max = (img.img_height - img.cy) / img.fy;
 
-    float screen_scale = 7;
+    // TODO: Need to control the value adaptively.
+    float screen_scale = 5.0; 
     float x_bar_min = -img.cx * screen_scale / img.fx;
     float x_bar_max = (img.img_width-img.cx) * screen_scale  / img.fx;
     float y_bar_min = -img.cy * screen_scale / img.fy;
@@ -452,7 +535,8 @@ void PcdProj::SaveDepthImage(const LImage& img){
     cv::addWeighted(depth_image,0.95,original_image,0.05,0,result_image);
 
     for(auto& point : img.feature_points){
-		cv::circle(result_image, cv::Point(point(0),point(1)), 1, cv::Scalar(0, 255, 120), -1);
+        // TODO: Point size might be controlled by depth scale.
+		cv::circle(result_image, cv::Point(point(0),point(1)), 3, cv::Scalar(0, 255, 120), -1);
 	}
 
     std::string result_image_path = options_.depth_image_folder + "/";

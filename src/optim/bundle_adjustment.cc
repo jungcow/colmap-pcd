@@ -231,6 +231,7 @@ void BundleAdjustmentConfig::AddVariablePoint(const point3D_t point3D_id) {
   variable_point3D_ids_.insert(point3D_id);
 }
 
+// To find the point3D-LiDAR correspondence (1st point-to-plane association)
 void BundleAdjustmentConfig::Project2Image(Reconstruction* reconstruction,const point3D_t& point3D_id, const image_t& image_id, const int& match_features_threshold) {
   Point3D& point3D = reconstruction->Point3D(point3D_id);
   
@@ -261,6 +262,7 @@ void BundleAdjustmentConfig::Project2Image(Reconstruction* reconstruction,const 
   }
 }
 
+// To find the point3D-LiDAR correspondence (1st point-to-plane association)
 void BundleAdjustmentConfig::MatchVariablePoint2LidarPoint(Reconstruction* reconstruction,const point3D_t point3D_id){
   Point3D& point3D = reconstruction->Point3D(point3D_id);
   Eigen::Vector3d pt_xyz = point3D.XYZ();

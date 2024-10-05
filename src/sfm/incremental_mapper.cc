@@ -461,6 +461,9 @@ bool IncrementalMapper::RegisterInitialImagePairByDepthProj(const Options& optio
     image1_idxs.push_back(matches[i].point2D_idx1);
     image2_idxs.push_back(matches[i].point2D_idx2);
   }
+  std::cout << "A number of 2D points: " << tri_points2D.size() << std::endl;
+  std::cout << "A number of 3D points: " << tri_points3D.size() << std::endl;
+  std::cout << "A number of 2D points(track): " << image2_idxs.size() << std::endl;
 
   AbsolutePoseEstimationOptions abs_pose_options;
   abs_pose_options.num_threads = options.num_threads;
