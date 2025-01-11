@@ -406,7 +406,7 @@ void IncrementalMapperController::Run() {
     init_mapper_options.init_min_tri_angle /= 2;
     Reconstruct(init_mapper_options);
   }
-
+  SaveImagePoses();
   GetTimer().PrintMinutes();
 }
 
@@ -743,6 +743,7 @@ bool IncrementalMapperController::LoadPose() {
           }
         }
         if (exist_nan) {
+          std::cout << "Nan line found" << std::endl;
           continue;
         }
         double d;
@@ -751,6 +752,7 @@ bool IncrementalMapperController::LoadPose() {
           pose.push_back(d);
 
         }
+        std::cout << "[ ID " << image_id << " ] ";
 
         double t_x = -static_cast<double>(pose[1]);
         double t_y = -static_cast<double>(pose[2]);
@@ -794,6 +796,102 @@ bool IncrementalMapperController::LoadPose() {
   << options_->image_pose_prior_path << std::endl
   << std::endl;
   return true;
+
+}
+
+void IncrementalMapperController::SaveImagePoses(){
+  if (options_->image_pose_save_folder == ""){
+    std::cout << "Pose file path undefined" << std::endl;
+  }
+
+  const Reconstruction& reconstruction =
+    reconstruction_manager_->Get(reconstruction_manager_->Size() - 1);
+    // reconstruction_manager_->Get(SelectedReconstructionIdx());
+  std::string traj_path = options_->image_pose_save_folder + "/"+"pose.ply";
+  std::ofstream traj_writeout;
+  traj_writeout.open(traj_path, std::ios::out);
+  if (!traj_writeout){
+    std::cout << "Write out traj fail" << std::endl;
+    return;
+  }
+
+  // int image_num = mapper_controller_->database_cache_.NumImages();
+  // std::vector<std::string> image_list = (options_.image_reader)->image_list;
+  // int image_num = image_list.size();
+
+  // std::unique_ptr<IncrementalMapperController> mapper_controller_
+  int image_num = OriginImagesNum();
+  // database_management_widget_-> NumImages();
+
+  traj_writeout << "ply" << std::endl
+                << "format ascii 1.0" << std::endl
+                << "element vertex " << image_num << std::endl
+                << "property float x" << std::endl
+                << "property float y" << std::endl
+                << "property float z" << std::endl
+                << "property float roll" << std::endl
+                << "property float pitch" << std::endl
+                << "property float yaw" << std::endl
+                << "end_header" << std::endl;
+  
+  const EIGEN_STL_UMAP(image_t, class Image) images = reconstruction.Images();
+  for (int i = 1; i <= image_num; i++){
+    image_t image_id = i;
+    auto iter = images.find(image_id);
+    if (iter == images.end()) {
+      traj_writeout << "nan" << " "
+                    << "nan" << " "
+                    << "nan" << " "
+                    << "nan" << " "
+                    << "nan" << " "
+                    << "nan" << std::endl;
+    } else {
+      Image image = iter->second;
+      const Eigen::Vector3d t_cw =  image.Tvec();
+      const Eigen::Vector4d q_cw =  image.Qvec();
+
+      Eigen::Quaterniond quaternion(q_cw(0), q_cw(1),q_cw(2), q_cw(3));
+      Eigen::Matrix3d R_cw = quaternion.matrix();
+
+      Eigen::Matrix3d R_wc = R_cw.transpose();
+      Eigen::Vector3d t_wc = - R_wc * t_cw;
+      // eular angle is radian[rad]
+      Eigen::Vector3d euler_angle = R_wc.eulerAngles(1,0,2);
+      double roll = euler_angle(2);
+      double pitch = -euler_angle(1);
+      double yaw = -euler_angle(0);
+
+      if (pitch < -M_PI / 2 || pitch > M_PI / 2) {
+        roll += M_PI;
+        pitch = M_PI - pitch;
+        yaw += M_PI;
+      }
+
+      if (roll < -M_PI) roll += 2 * M_PI;
+      else if (roll > M_PI) roll -= 2 * M_PI;
+      if (pitch < -M_PI) pitch += 2 * M_PI;
+      else if (pitch > M_PI) pitch -= 2 * M_PI;
+      if (yaw < -M_PI) yaw += 2 * M_PI;
+      else if (yaw > M_PI) yaw -= 2 * M_PI;
+
+      double tx = t_wc(2);
+      double ty = -t_wc(0);
+      double tz = -t_wc(1);
+      traj_writeout << static_cast<float>(tx) << " "
+                    << static_cast<float>(ty) << " "
+                    << static_cast<float>(tz) << " "
+                    << static_cast<float>(roll) << " "
+                    << static_cast<float>(pitch) << " "
+                    << static_cast<float>(yaw) << std::endl;
+    }
+  }
+  
+  traj_writeout.close();
+
+  std::cout << std::endl;
+  std::cout << "Pose file saved to "<< std::endl
+            << traj_path <<std::endl;
+  std::cout << std::endl;
 
 }
 

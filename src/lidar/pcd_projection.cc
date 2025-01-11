@@ -64,7 +64,7 @@ void PcdProj::SetNewImage(const Image& image, const Camera& camera, std::map<poi
         if (iter != img.feature_pts_map.end()){
             point3D_t id = point2D.GetPoint3DId();
             Eigen::Matrix<double,6,1> pt_lidar;
-            pt_lidar <<static_cast<double>(iter->second.first.x),
+            pt_lidar << static_cast<double>(iter->second.first.x),
                         static_cast<double>(iter->second.first.y),
                         static_cast<double>(iter->second.first.z),
                         static_cast<double>(iter->second.first.normal_x),
@@ -74,7 +74,8 @@ void PcdProj::SetNewImage(const Image& image, const Camera& camera, std::map<poi
             img.succeed_match +=1;
         }
     }
-    std::cout << "[ point3D and Lidar association ] succeed_match num: " << img.succeed_match << std::endl;
+    std::cout << "[ point3D and Lidar association ] succeed_match num: " << img.succeed_match << \
+                " (points2D: " << image.Points2D().size() << ")" << std::endl;
 
     if (options_.if_save_depth_image){
         SaveDepthImage(img);
@@ -240,17 +241,10 @@ void PcdProj::SearchSubMap(const LImage& img, ImageMapType& image_map){
     Eigen::Vector3f center_v(0.0,0.0,1.0);
     Eigen::Vector3f x_bar_v(1.0,0.0,0.0);
     Eigen::Vector3f y_bar_v(0.0,1.0,0.0);
-    // float x_bar_min = -img.cx / img.fx;
-    // float x_bar_max = (img.img_width-img.cx) / img.fx;
-    // float y_bar_min = -img.cy / img.fy;
-    // float y_bar_max = (img.img_height - img.cy) / img.fy;
-
-    // TODO: Need to control the value adaptively.
-    float screen_scale = 5.0; 
-    float x_bar_min = -img.cx * screen_scale / img.fx;
-    float x_bar_max = (img.img_width-img.cx) * screen_scale  / img.fx;
-    float y_bar_min = -img.cy * screen_scale / img.fy;
-    float y_bar_max = (img.img_height - img.cy) * screen_scale / img.fy;
+    float x_bar_min = -img.cx / img.fx;
+    float x_bar_max = (img.img_width-img.cx) / img.fx;
+    float y_bar_min = -img.cy / img.fy;
+    float y_bar_max = (img.img_height - img.cy) / img.fy;
 
     Eigen::Vector3f corner_1 = x_bar_v * x_bar_max  + y_bar_v * y_bar_max;
     Eigen::Vector3f corner_2 = x_bar_v * x_bar_max  + y_bar_v * y_bar_min;
@@ -330,10 +324,13 @@ void PcdProj::ImageMapProj(LImage& img, ImageMapType& image_map, const Camera& c
             int scale_x;
             int scale_y;
 
-            double max_proj_scale_x = static_cast<double>(options_.max_proj_scale) * (fx/3039.0) * (depth_image_scale);
-            double max_proj_scale_y = static_cast<double>(options_.max_proj_scale) * (fy/3039.0) * (depth_image_scale);
-            double min_proj_scale_x = static_cast<double>(options_.min_proj_scale) * (fx/3039.0) * (depth_image_scale);
-            double min_proj_scale_y = static_cast<double>(options_.min_proj_scale) * (fy/3039.0) * (depth_image_scale);
+            double max_proj_scale_x = static_cast<double>(options_.max_proj_scale)*(fx/3039.0)*(depth_image_scale/0.2);
+            double max_proj_scale_y = static_cast<double>(options_.max_proj_scale)*(fy/3039.0)*(depth_image_scale/0.2);
+
+            double min_proj_scale_x = static_cast<double>(options_.min_proj_scale)*(fx/3039.0)*(depth_image_scale/0.2);
+            double min_proj_scale_y = static_cast<double>(options_.min_proj_scale)*(fy/3039.0)*(depth_image_scale/0.2);
+
+
 
             static double a_x = (max_proj_scale_x - min_proj_scale_x)/
                         (options_.min_proj_dist - static_cast<double>(options_.choose_meter));
@@ -414,7 +411,7 @@ void PcdProj::SaveDepthImage(const LImage& img){
     }
 
     cv::Mat result_image(img.img_height,img.img_width,CV_8UC3);
-    cv::addWeighted(depth_image,0.95,original_image,0.05,0,result_image);
+    cv::addWeighted(depth_image,0.9,original_image,0.1,0,result_image);
 
     for(auto& point : img.feature_points){
         // TODO: Point size might be controlled by depth scale.

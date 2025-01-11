@@ -252,6 +252,7 @@ class IncrementalMapperController : public Thread {
   void Run();
   bool LoadDatabase();
   bool LoadPose();
+  void SaveImagePoses();
   void Reconstruct(const IncrementalMapper::Options& init_mapper_options);
 
   const IncrementalMapperOptions* options_;
